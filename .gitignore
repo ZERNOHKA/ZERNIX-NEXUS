@@ -1,0 +1,36 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build output
+build/
+dist/
+build_protected/
+dist_protected/
+.secure_build/
+*.toc
+*.pkg
+*.pyz
+*.log
+
+# Local secrets and machine-specific files
+license.key
+license_private.pem
+*.pem
+*.key
+.env
+.env.*
+settings_backup.json
+
+# Editor and OS files
+.cursor/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

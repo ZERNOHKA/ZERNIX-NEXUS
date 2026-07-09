@@ -1,0 +1,7 @@
+customtkinter
+psutil
+pillow
+requests
+cryptography
+WMI
+pywin32
