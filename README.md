@@ -136,7 +136,6 @@ python main.py --demo
 
 - [Чек-лист ручной проверки](docs/QA_MANUAL_CHECKLIST.md)
 - [Матрица системных действий](docs/AUDIT_MATRIX.md)
-- [План улучшения проекта](docs/IMPROVEMENT_PLAN.md)
 
 ## Важное замечание
 
