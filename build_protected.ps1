@@ -1,7 +1,7 @@
 # ZERNIX protected release build.
 #
 # Single source of truth for application logic:
-#   - main.py, licensing.py, core\, ui\  (repository root)
+#   - main.py, licensing.py, app\, core\, ui\  (repository root)
 # This script wipes .secure_build\, regenerates .secure_build\obf\ from those paths via PyArmor, then compiles with Nuitka.
 #
 # Parameters:
@@ -48,17 +48,18 @@ New-Item -ItemType Directory -Path ".secure_build" | Out-Null
 Write-Host "Step 1/3: Obfuscating sources with PyArmor..." -ForegroundColor Yellow
 $sourceEntry = ".secure_build\obf\main.py"
 $ObfuscationFallbackUsed = $false
-& $pyarmorExe gen --recursive --output ".secure_build\obf" "main.py" "licensing.py" "core" "ui"
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path $sourceEntry) -or -not (Test-Path ".secure_build\obf\licensing.py")) {
+& $pyarmorExe gen --recursive --output ".secure_build\obf" "main.py" "licensing.py" "app" "core" "ui"
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $sourceEntry) -or -not (Test-Path ".secure_build\obf\licensing.py") -or -not (Test-Path ".secure_build\obf\app\actions.py")) {
     $ObfuscationFallbackUsed = $true
     Write-Warning "Full PyArmor obfuscation failed, likely because trial PyArmor cannot process the large main.py. Retrying critical modules only."
     if (Test-Path ".secure_build\obf") { Remove-Item ".secure_build\obf" -Recurse -Force }
-    & $pyarmorExe gen --recursive --output ".secure_build\obf" "licensing.py" "core" "ui"
-    if ($LASTEXITCODE -ne 0 -or -not (Test-Path ".secure_build\obf\licensing.py")) {
+    & $pyarmorExe gen --recursive --output ".secure_build\obf" "licensing.py" "app" "core" "ui"
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path ".secure_build\obf\licensing.py") -or -not (Test-Path ".secure_build\obf\app\actions.py")) {
         Write-Warning "Critical module obfuscation hit the PyArmor trial limit. Retrying licensing.py only."
         if (Test-Path ".secure_build\obf") { Remove-Item ".secure_build\obf" -Recurse -Force }
         & $pyarmorExe gen --output ".secure_build\obf" "licensing.py"
         Assert-StepSuccess "licensing PyArmor obfuscation"
+        Copy-Item "app" ".secure_build\obf\app" -Recurse -Force
         Copy-Item "core" ".secure_build\obf\core" -Recurse -Force
         Copy-Item "ui" ".secure_build\obf\ui" -Recurse -Force
     }
@@ -67,8 +68,11 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $sourceEntry) -or -not (Test-Path ".
 if (-not (Test-Path ".secure_build\obf\licensing.py")) {
     throw "PyArmor did not obfuscate licensing.py"
 }
+if (-not (Test-Path ".secure_build\obf\app\actions.py")) {
+    throw "Application package is missing from the protected build workspace"
+}
 if ($StrictObfuscation -and $ObfuscationFallbackUsed) {
-    Write-Error "StrictObfuscation: PyArmor used a fallback (plain main.py and/or plain core\ui). Aborting release build."
+    Write-Error "StrictObfuscation: PyArmor used a fallback (plain main.py and/or plain app\core\ui). Aborting release build."
     exit 2
 }
 if ($ObfuscationFallbackUsed) {

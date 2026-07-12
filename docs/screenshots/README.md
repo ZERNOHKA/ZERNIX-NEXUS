@@ -1,12 +1,12 @@
-# Screenshots
+# Скриншоты
 
-Place real app screenshots here before publishing the project.
+В этой папке хранятся изображения интерфейса для главного README.
 
-Recommended set:
+Текущий набор:
 
 - `dashboard.png`
 - `presets.png`
 - `advanced-system.png`
 - `license.png`
 
-Use PNG files with a clean 16:9 or app-window crop. Avoid screenshots with personal license keys, HWID values, API URLs, or desktop notifications.
+Для новых изображений используйте аккуратный кадр окна приложения. На скриншотах не должно быть ключей лицензии, HWID, адресов API и личных уведомлений рабочего стола.

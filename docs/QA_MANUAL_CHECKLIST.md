@@ -1,53 +1,74 @@
-# Manual QA Checklist
+# Чек-лист ручной проверки
 
-Run these checks on a non-production Windows machine or VM. Create a system restore point before testing optimization actions.
+Системные оптимизации следует проверять на тестовом компьютере или виртуальной машине. Перед началом создайте точку восстановления Windows.
 
-## Preconditions
+## Подготовка
 
-1. Start the app with Administrator rights: `python main.py` or the built `.exe`.
-2. Activate a valid license if license validation is enabled.
-3. Close unnecessary apps before testing gaming presets.
+1. Установить зависимости: `pip install -r requirements.txt`.
+2. Запустить приложение от имени администратора: `python main.py` или собранный `.exe`.
+3. Для обычного сценария использовать действующую лицензию; для проверки интерфейса запустить `python main.py --demo`.
+4. Закрыть лишние приложения перед проверкой игровых пресетов.
 
-## A. Gaming Turbo Preset
+## Быстрая проверка интерфейса
 
-1. Open **Advanced -> Profiles**.
-2. Apply **Gaming Turbo**.
-3. Confirm the app log has no Python exceptions.
-4. Optional: run `powercfg /getactivescheme` and check that Windows moved to a high-performance power plan.
+1. Открыть главный экран, раздел дополнительных инструментов и вкладку лицензии.
+2. Переключить язык и убедиться, что заголовки, кнопки и описания обновились.
+3. Проверить отсутствие наложений при минимальном размере окна.
+4. Убедиться, что CPU, GPU и RAM обновляются без исключений в консоли приложения.
 
-## B. Dashboard Session Boost
+## Gaming Turbo
 
-1. Press **Session Boost** on the dashboard.
-2. Confirm the FaceIT-sensitive action warning if it appears.
-3. Check that steps complete in order: backup, adaptive CS2 profile, system boost, network optimization, and optional kernel latency profile.
-4. If CS2 is not running, kernel latency should be skipped gracefully.
+1. Открыть **Дополнительно -> Профили**.
+2. Применить **Gaming Turbo**.
+3. Убедиться, что в журнале приложения нет исключений Python.
+4. При необходимости выполнить `powercfg /getactivescheme` и проверить переход на производительный план питания.
 
-## C. Work / Restore
+## CS2 Session Boost
 
-1. Apply **Work / Restore** or press **Session Rollback** on the dashboard.
-2. Confirm the power plan moves back toward Balanced.
-3. Confirm the kernel latency profile is released if it was active.
-4. Optional registry spot-check:
-   - `HKLM\...\PriorityControl\Win32PrioritySeparation`
-   - `HKCU\Control Panel\Mouse`
+1. Нажать **CS2 Session Boost** на главном экране.
+2. Проверить предупреждение для действий, чувствительных к FACEIT.
+3. Убедиться в последовательном выполнении резервного копирования, адаптивного профиля CS2, системной и сетевой оптимизации.
+4. Если CS2 не запущена, latency-профиль должен быть корректно пропущен.
 
-## D. CyberSport Confirmation Flow
+## Work / Restore
 
-1. Apply **CyberSport**.
-2. Confirm the FaceIT warning if it appears.
-3. A second warning about VBS and `bcdedit` should appear.
-4. Cancel once and confirm the preset does not run.
+1. Применить **Work / Restore** или нажать кнопку отката на главном экране.
+2. Проверить возврат к сбалансированному плану питания.
+3. Убедиться, что активный kernel latency-профиль освобожден.
+4. Выборочно проверить `Win32PrioritySeparation` и параметры мыши в реестре.
 
-## E. Strict Release Build
+## CyberSport
+
+1. Запустить пресет **CyberSport**.
+2. Проверить предупреждение FACEIT и отдельное подтверждение изменений VBS и `bcdedit`.
+3. Отменить подтверждение и убедиться, что пресет не выполнился.
+4. Повторить с подтверждением только на тестовой системе.
+
+## Лицензирование
+
+1. Проверить понятное сообщение при недоступном сервере лицензий.
+2. Проверить сохранение корректного ключа и повторный запуск приложения.
+3. Убедиться, что в интерфейсе, журнале и скриншотах не отображается полный ключ или API-ключ.
+4. Проверить, что `--demo` пропускает сетевую проверку, но не удаляет экран и код лицензирования.
+
+## Сборка
+
+Обычная сборка:
+
+```powershell
+.\build.bat
+```
+
+Защищенная сборка:
 
 ```powershell
 .\build_protected.ps1 -StrictObfuscation
 ```
 
-Expected behavior: the build exits with code `2` if PyArmor falls back to plain source files. For a real release, use a PyArmor license/configuration that fully protects the selected modules.
+В строгом режиме сборка должна завершиться с кодом `2`, если PyArmor перешел на копирование открытых исходников.
 
-## Rollback Notes
+## После проверки
 
-- CS2 `autoexec.cfg` edits should be backed up manually or through Steam Cloud awareness.
-- `netsh` TCP changes from **Network Fix** are not fully reverted by registry rollback.
-- See [AUDIT_MATRIX.md](AUDIT_MATRIX.md) for detailed action coverage.
+- Проверить, что `build/`, `dist/`, `.secure_build/` и `__pycache__/` не добавлены в Git.
+- Проверить сценарии отката из [матрицы системных действий](AUDIT_MATRIX.md).
+- Перед публикацией просмотреть скриншоты на наличие HWID, ключей, адресов API и системных уведомлений.

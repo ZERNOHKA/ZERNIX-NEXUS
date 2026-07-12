@@ -1,5 +1,6 @@
 import customtkinter as ctk
 
+from app.actions import AppAction
 from ui.styles import Theme
 from ui.widgets import ActionRow
 
@@ -35,7 +36,10 @@ class SystemFrame(ctk.CTkFrame):
         start_idx = self._pending_row_index
         end_idx = min(len(self._pending_rows), start_idx + batch_size)
         for idx in range(start_idx, end_idx):
-            key, desc_key, action_key, command = self._pending_rows[idx]
+            action: AppAction = self._pending_rows[idx]
+            key = action.title_key
+            desc_key = action.description_key
+            action_key = action.button_key
             if idx == 2:
                 separator = ctk.CTkFrame(self.actions, height=2, fg_color=Theme.COLORS["border_light"])
                 separator.pack(fill="x", padx=30, pady=(20, 15))
@@ -51,7 +55,7 @@ class SystemFrame(ctk.CTkFrame):
                 self.tr(key),
                 self.tr(desc_key),
                 self.tr(action_key),
-                command,
+                action.handler,
                 self.tr(desc_key),
             )
             row.pack(fill="x", pady=6)

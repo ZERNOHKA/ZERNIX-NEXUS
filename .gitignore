@@ -18,6 +18,9 @@ dist_protected/
 *.pkg
 *.pyz
 *.log
+.coverage
+htmlcov/
+.pytest_cache/
 
 # Local secrets and machine-specific files
 license.key
@@ -29,7 +32,6 @@ license_private.pem
 settings_backup.json
 
 # Editor and OS files
-.cursor/
 .vscode/
 .idea/
 .DS_Store
