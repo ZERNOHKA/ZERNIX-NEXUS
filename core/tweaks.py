@@ -46,9 +46,7 @@ _WM_SETTINGCHANGE = 0x001A
 _SMTO_ABORTIFHUNG = 0x0002
 _STATUS_CACHE = {"secure_boot": (None, 0.0), "kb5077181": (None, 0.0)}
 
-# --- ИСПРАВЛЕННЫЙ БЛОК WINAPI ---
 _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-# EmptyWorkingSet находится в psapi.dll
 try:
     _psapi = ctypes.WinDLL("psapi.dll", use_last_error=True)
     _EmptyWorkingSet = _psapi.EmptyWorkingSet
@@ -69,8 +67,6 @@ _CloseHandle.restype = wintypes.BOOL
 
 _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 _PROCESS_SET_QUOTA = 0x0100
-# --------------------------------
-
 _SUSPICIOUS_DEBUG_TOOLS = {
     "ollydbg.exe",
     "x64dbg.exe",
@@ -382,7 +378,7 @@ def verify_exe_integrity(min_exe_size_bytes: int = 2 * 1024 * 1024) -> bool:
         return False
 
 def get_system_info():
-    """Сбор данных о железе для красивого вывода"""
+    """Collect hardware data displayed on the system dashboard."""
     try:
         def _clean_cpu_name(raw_name: str) -> str:
             cleaned = (raw_name or "").strip()
@@ -1230,7 +1226,7 @@ def find_cs2_cfg_directory():
 
 def _cs2_autoexec_body():
     lines = [
-        "// NovaBoost — CS2 autoexec",
+        "// ZERNIX NEXUS — CS2 autoexec",
         "rate 1000000",
         "cl_interp_ratio 1",
         "cl_interp 0.015625",
@@ -1242,7 +1238,7 @@ def _cs2_autoexec_body():
         'bind s "+back"',
         'bind a "+left"',
         'bind d "+right"',
-        'echo "NovaBoost autoexec loaded"',
+        'echo "ZERNIX NEXUS autoexec loaded"',
     ]
     return "\n".join(lines)
 
@@ -1667,23 +1663,37 @@ def clear_steam_shader_precache():
                 continue
     return f"🧹 Steam shader pre-cache cleared ({removed} items)."
 
-def _ensure_autoexec_sources_novaboost(cfg_dir: str) -> str:
-    """Append `exec novaboost` to autoexec.cfg when Pro config is installed."""
+def _ensure_autoexec_sources_zernix(cfg_dir: str) -> str:
+    """Ensure autoexec.cfg loads the current ZERNIX NEXUS configuration."""
     autoexec_path = os.path.join(cfg_dir, "autoexec.cfg")
-    line = "exec novaboost"
+    line = "exec zernix_nexus"
     try:
         body = ""
         if os.path.isfile(autoexec_path):
             with open(autoexec_path, "r", encoding="utf-8", errors="ignore") as f:
                 body = f.read()
-        if re.search(rf"^\s*{re.escape(line)}\s*$", body, flags=re.MULTILINE | re.IGNORECASE):
-            return "[ZERNIX] autoexec.cfg already runs novaboost.cfg."
-        if body and not body.endswith("\n"):
-            body += "\n"
-        body += line + "\n"
+        legacy_line_present = bool(
+            re.search(r"^\s*exec\s+novaboost\s*$", body, flags=re.MULTILINE | re.IGNORECASE)
+        )
+        body = re.sub(
+            r"^\s*exec\s+novaboost\s*$",
+            line,
+            body,
+            flags=re.MULTILINE | re.IGNORECASE,
+        )
+        if not legacy_line_present and re.search(
+            rf"^\s*{re.escape(line)}\s*$",
+            body,
+            flags=re.MULTILINE | re.IGNORECASE,
+        ):
+            return "[ZERNIX] autoexec.cfg loads zernix_nexus.cfg."
+        if not legacy_line_present:
+            if body and not body.endswith("\n"):
+                body += "\n"
+            body += line + "\n"
         with open(autoexec_path, "w", encoding="utf-8", newline="\n") as f:
             f.write(body)
-        return "[ZERNIX] autoexec.cfg updated: exec novaboost"
+        return "[ZERNIX] autoexec.cfg updated: exec zernix_nexus"
     except OSError as exc:
         return f"⚠️ autoexec exec line skipped: {exc}"
 
@@ -1692,12 +1702,11 @@ def install_cs2_pro_config():
     cfg_dir = find_cs2_cfg_directory()
     if not cfg_dir:
         return "❌ CS2 Pro Config: папка игры не найдена."
-    path = os.path.join(cfg_dir, "novaboost.cfg")
+    path = os.path.join(cfg_dir, "zernix_nexus.cfg")
     try:
         body = "\n".join(
             [
-                "// NovaBoost CS2 Pro Config",
-                "// April 2026 Registration Fix",
+                "// ZERNIX NEXUS CS2 Pro Config",
                 "rate 786432",
                 "cl_interp_ratio 1",
                 "cl_interp 0",
@@ -1713,14 +1722,14 @@ def install_cs2_pro_config():
                 "engine_no_focus_sleep 0",
                 "cl_hud_telemetry_frametime_show 2",
                 "setting.buffering_to_smooth_packet_loss 0",
-                'echo "NovaBoost Pro Config loaded"',
+                'echo "ZERNIX NEXUS Pro Config loaded"',
             ]
         )
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(body)
         results = [
-            "🎮 Pro Config installed: novaboost.cfg",
-            _ensure_autoexec_sources_novaboost(cfg_dir),
+            "🎮 Pro Config installed: zernix_nexus.cfg",
+            _ensure_autoexec_sources_zernix(cfg_dir),
             apply_cs2_competitive_2026_cfg(),
             disable_fullscreen_optimization_for_cs2(),
             set_nvidia_shader_cache_unlimited(),
@@ -1736,13 +1745,15 @@ def set_cs2_frametime_telemetry(enabled=True):
     cfg_dir = find_cs2_cfg_directory()
     if not cfg_dir:
         return "❌ CS2 telemetry: game cfg folder not found."
-    path = os.path.join(cfg_dir, "novaboost.cfg")
+    path = os.path.join(cfg_dir, "zernix_nexus.cfg")
+    legacy_path = os.path.join(cfg_dir, "novaboost.cfg")
     value = "2" if enabled else "0"
     line = f"cl_hud_telemetry_frametime_show {value}"
     try:
         body = ""
-        if os.path.isfile(path):
-            with open(path, "r", encoding="utf-8", errors="ignore") as f:
+        source_path = path if os.path.isfile(path) else legacy_path
+        if os.path.isfile(source_path):
+            with open(source_path, "r", encoding="utf-8", errors="ignore") as f:
                 body = f.read()
         if "cl_hud_telemetry_frametime_show" in body:
             body = re.sub(r"cl_hud_telemetry_frametime_show\s+\d+", line, body)
@@ -2122,7 +2133,7 @@ def apply_extra_performance_tweaks():
         return f"❌ Ошибка: {e}"
 
 def restore_registry_defaults():
-    """Restore key NovaBoost-touched registry values to safer defaults."""
+    """Restore registry values managed by ZERNIX NEXUS to safer defaults."""
     if not is_admin():
         return "❌ Restore defaults requires admin rights."
     try:
@@ -2444,9 +2455,3 @@ def enable_game_mode():
         return "✅ Game Mode enabled (background DVR capture off)."
     except Exception as e:
         return f"❌ Failed to enable Game Mode: {e}"
-
-def rollback_all():
-    if not os.path.isfile(BACKUP_FILE):
-        return "❌ Бэкап не найден!"
-    # ... логика отката ...
-    return "🔄 Откат завершен! Перезагрузите ПК."

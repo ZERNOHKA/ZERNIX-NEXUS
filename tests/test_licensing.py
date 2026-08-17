@@ -1,13 +1,21 @@
 import unittest
 import sys
 from types import SimpleNamespace
+from unittest.mock import patch
 
 try:
     import requests  # noqa: F401
 except ModuleNotFoundError:
     sys.modules["requests"] = SimpleNamespace(Response=object)
 
-from licensing import _clean_hwid_value, _extract_error, _extract_expiry, _is_success_response, normalize_license_key
+from licensing import (
+    _clean_hwid_value,
+    _extract_error,
+    _extract_expiry,
+    _is_success_response,
+    check_license,
+    normalize_license_key,
+)
 
 
 class LicensingTests(unittest.TestCase):
@@ -26,6 +34,13 @@ class LicensingTests(unittest.TestCase):
         self.assertTrue(_is_success_response({"status": "success"}))
         self.assertEqual(_extract_expiry({"expires_at": "2027-01-01"}), "2027-01-01")
         self.assertEqual(_extract_error({"detail": "expired"}), "expired")
+
+    def test_license_check_requires_configured_api_key(self):
+        with patch("licensing.API_KEY", ""):
+            self.assertEqual(
+                check_license("ZERNIX-AB12-CD34"),
+                (False, "License server API key is not configured."),
+            )
 
 
 if __name__ == "__main__":

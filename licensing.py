@@ -19,7 +19,7 @@ import requests
 
 API_HOST = os.environ.get("ZERNIX_LICENSE_API_HOST", os.environ.get("API_HOST", "127.0.0.1"))
 API_PORT = os.environ.get("ZERNIX_LICENSE_API_PORT", os.environ.get("API_PORT", "8000"))
-API_KEY = os.environ.get("ZERNIX_LICENSE_API_KEY", os.environ.get("API_KEY", "zernix-local-api-key"))
+API_KEY = os.environ.get("ZERNIX_LICENSE_API_KEY", "")
 LICENSE_SERVER_URL = os.environ.get("ZERNIX_LICENSE_SERVER_URL", f"http://{API_HOST}:{API_PORT}/validate")
 APP_NAME = "Zernix"
 LICENSE_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), APP_NAME)
@@ -169,6 +169,8 @@ def check_license(user_key: str) -> tuple[bool, str]:
     key = normalize_license_key(user_key)
     if not key:
         return False, "License key is required."
+    if not API_KEY:
+        return False, "License server API key is not configured."
 
     try:
         hwid = get_hwid()
