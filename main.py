@@ -96,7 +96,8 @@ from ui.widgets import bind_license_entry_hotkeys
 from ui.screens import AdvancedFrame, DashboardFrame, LicenseFrame
 from ui.styles import Theme
 
-LICENSE_REG_PATH = r"Software\\NovaBoostPro"
+LICENSE_REG_PATH = r"Software\\ZERNIX\\NEXUS"
+LEGACY_LICENSE_REG_PATH = r"Software\\NovaBoostPro"
 LICENSE_REG_VALUE = "LicenseKey"
 LICENSE_REG_BACKUP_REMINDER = "BackupReminderShown"
 HIDDEN_PROCESS_FLAGS = 0x08000000
@@ -162,7 +163,7 @@ def is_admin():
         return False
 
 
-class NovaBoostApp(ctk.CTk):
+class ZernixNexusApp(ctk.CTk):
     def _apply_window_icon(self):
         try:
             icon_path = resource_path(os.path.join("assets", "logotip.ico"))
@@ -359,27 +360,36 @@ class NovaBoostApp(ctk.CTk):
             pass
 
     def _clear_registry_license_key(self):
-        try:
-            with winreg.CreateKey(winreg.HKEY_CURRENT_USER, LICENSE_REG_PATH) as reg_key:
-                winreg.DeleteValue(reg_key, LICENSE_REG_VALUE)
-        except OSError:
-            pass
+        for registry_path in (LICENSE_REG_PATH, LEGACY_LICENSE_REG_PATH):
+            try:
+                with winreg.CreateKey(winreg.HKEY_CURRENT_USER, registry_path) as reg_key:
+                    winreg.DeleteValue(reg_key, LICENSE_REG_VALUE)
+            except OSError:
+                pass
 
     def _load_registry_license_key(self) -> str:
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, LICENSE_REG_PATH, 0, winreg.KEY_READ) as reg_key:
-                value, _ = winreg.QueryValueEx(reg_key, LICENSE_REG_VALUE)
-                return str(value).strip()
-        except OSError:
-            return ""
+        for registry_path in (LICENSE_REG_PATH, LEGACY_LICENSE_REG_PATH):
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, registry_path, 0, winreg.KEY_READ) as reg_key:
+                    value, _ = winreg.QueryValueEx(reg_key, LICENSE_REG_VALUE)
+                token = str(value).strip()
+                if token and registry_path == LEGACY_LICENSE_REG_PATH:
+                    self._save_registry_license_key(token)
+                return token
+            except OSError:
+                continue
+        return ""
 
     def _has_backup_reminder_been_shown(self) -> bool:
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, LICENSE_REG_PATH, 0, winreg.KEY_READ) as reg_key:
-                value, _ = winreg.QueryValueEx(reg_key, LICENSE_REG_BACKUP_REMINDER)
-                return int(value) == 1
-        except OSError:
-            return False
+        for registry_path in (LICENSE_REG_PATH, LEGACY_LICENSE_REG_PATH):
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, registry_path, 0, winreg.KEY_READ) as reg_key:
+                    value, _ = winreg.QueryValueEx(reg_key, LICENSE_REG_BACKUP_REMINDER)
+                if int(value) == 1:
+                    return True
+            except OSError:
+                continue
+        return False
 
     def _set_backup_reminder_shown(self):
         try:
@@ -389,11 +399,17 @@ class NovaBoostApp(ctk.CTk):
             pass
 
     def _clear_backup_reminder_flag(self):
-        try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, LICENSE_REG_PATH, 0, winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE) as reg_key:
-                winreg.DeleteValue(reg_key, LICENSE_REG_BACKUP_REMINDER)
-        except OSError:
-            pass
+        for registry_path in (LICENSE_REG_PATH, LEGACY_LICENSE_REG_PATH):
+            try:
+                with winreg.OpenKey(
+                    winreg.HKEY_CURRENT_USER,
+                    registry_path,
+                    0,
+                    winreg.KEY_SET_VALUE | winreg.KEY_QUERY_VALUE,
+                ) as reg_key:
+                    winreg.DeleteValue(reg_key, LICENSE_REG_BACKUP_REMINDER)
+            except OSError:
+                pass
 
     def _offer_first_activation_backup_if_needed(self):
         if self._has_backup_reminder_been_shown():
@@ -1342,5 +1358,5 @@ if __name__ == "__main__":
     _license_result = ensure_license_or_exit()
     _offline = _license_result == OFFLINE_ROLLBACK_RESULT
     _demo = _license_result == DEMO_MODE_RESULT
-    app = NovaBoostApp(offline_rollback=_offline, demo_mode=_demo)
+    app = ZernixNexusApp(offline_rollback=_offline, demo_mode=_demo)
     app.mainloop()
