@@ -26,6 +26,7 @@ LICENSE_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), A
 LICENSE_FILE = os.path.join(LICENSE_DIR, "license.txt")
 HIDDEN_PROCESS_FLAGS = 0x08000000 if os.name == "nt" else 0
 REQUEST_TIMEOUT_SECONDS = 10
+HWID_PROBE_TIMEOUT_SECONDS = 4
 DEMO_MODE_RESULT = "__DEMO_MODE__"
 OFFLINE_ROLLBACK_RESULT = "__OFFLINE_ROLLBACK__"
 _cached_hwid: str | None = None
@@ -83,9 +84,10 @@ def _read_wmic_value(alias: str, field: str) -> str:
             encoding="utf-8",
             errors="ignore",
             check=False,
+            timeout=HWID_PROBE_TIMEOUT_SECONDS,
             creationflags=HIDDEN_PROCESS_FLAGS,
         )
-    except OSError:
+    except (OSError, subprocess.TimeoutExpired):
         return ""
 
     if result.returncode != 0:
@@ -112,7 +114,7 @@ def _read_powershell_value(class_name: str, property_name: str) -> str:
             encoding="utf-8",
             errors="ignore",
             check=False,
-            timeout=4,
+            timeout=HWID_PROBE_TIMEOUT_SECONDS,
             creationflags=HIDDEN_PROCESS_FLAGS,
         )
     except (OSError, subprocess.TimeoutExpired):
